@@ -75,11 +75,17 @@ class OnBodySensorManager @Inject constructor(
     }
 
     private suspend fun updateOnBodySensor() {
+        mySensorManager = applicationContext.getSystemService()!!
+
         if (!isEnabled(onBodySensor)) {
+            // The listener is kept registered while the sensor is enabled, release it once it is disabled
+            if (isListenerRegistered) {
+                mySensorManager.unregisterListener(this)
+                Timber.d("On body sensor listener unregistered")
+                isListenerRegistered = false
+            }
             return
         }
-
-        mySensorManager = applicationContext.getSystemService()!!
 
         val onBodySensors = mySensorManager.getDefaultSensor(Sensor.TYPE_LOW_LATENCY_OFFBODY_DETECT, true)
         if (onBodySensors != null && !isListenerRegistered) {
@@ -108,10 +114,9 @@ class OnBodySensorManager @Inject constructor(
                     if (state) onBodySensor.statelessIcon else Mdi.AccountOff,
                     mapOf(),
                 )
+                // Send update immediately, only for this sensor, once the new state is stored
+                SensorReceiver.updateSensor(applicationContext, onBodySensor.id)
             }
         }
-
-        // Send update immediately
-        SensorReceiver.updateAllSensors(applicationContext)
     }
 }

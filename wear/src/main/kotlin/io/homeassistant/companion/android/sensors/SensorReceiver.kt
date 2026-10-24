@@ -28,6 +28,14 @@ class SensorReceiver : SensorReceiverBase() {
             intent.action = ACTION_UPDATE_SENSORS
             context.sendBroadcast(intent)
         }
+
+        /** Updates the sensor with [sensorId] and sends its state to the servers, without updating other sensors. */
+        fun updateSensor(context: Context, sensorId: String) {
+            val intent = Intent(context, SensorReceiver::class.java)
+            intent.action = ACTION_UPDATE_SENSOR
+            intent.putExtra(EXTRA_SENSOR_ID, sensorId)
+            context.sendBroadcast(intent)
+        }
     }
 
     // Suppress Lint because we only register for the receiver if the android version matches the intent
