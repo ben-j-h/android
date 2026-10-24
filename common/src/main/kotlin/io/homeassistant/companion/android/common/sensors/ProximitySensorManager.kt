@@ -30,7 +30,7 @@ class ProximitySensorManager @Inject constructor(
     SensorEventListener {
     companion object {
         private var isListenerRegistered = false
-        private var listenerLastRegistered = 0
+        private var listenerLastRegistered = 0L
 
         @ProvidesSensor
         internal val proximitySensor = SensorManager.BasicSensor(
@@ -95,8 +95,16 @@ class ProximitySensorManager @Inject constructor(
             )
             Timber.d("Proximity sensor listener registered")
             isListenerRegistered = true
-            listenerLastRegistered = now.toInt()
+            listenerLastRegistered = now
             maxRange = proximitySensors.maximumRange.roundToInt()
+        }
+    }
+
+    override suspend fun onSensorUpdateFinished() {
+        if (isListenerRegistered) {
+            mySensorManager.unregisterListener(this)
+            Timber.d("Proximity sensor listener unregistered, no event received during the update")
+            isListenerRegistered = false
         }
     }
 

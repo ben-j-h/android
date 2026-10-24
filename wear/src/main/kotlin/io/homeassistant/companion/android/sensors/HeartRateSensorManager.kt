@@ -43,7 +43,7 @@ class HeartRateSensorManager @Inject constructor(
     SensorEventListener {
     companion object {
         private var isListenerRegistered = false
-        private var listenerLastRegistered = 0
+        private var listenerLastRegistered = 0L
         private val skipAccuracy = listOf(
             SENSOR_STATUS_UNRELIABLE,
             SENSOR_STATUS_NO_CONTACT,
@@ -118,7 +118,16 @@ class HeartRateSensorManager @Inject constructor(
             )
             Timber.d("Heart Rate sensor listener registered")
             isListenerRegistered = true
-            listenerLastRegistered = now.toInt()
+            listenerLastRegistered = now
+        }
+    }
+
+    override suspend fun onSensorUpdateFinished() {
+        if (isListenerRegistered) {
+            mySensorManager.unregisterListener(this)
+            Timber.d("Heart Rate sensor listener unregistered, no event received during the update")
+            isListenerRegistered = false
+            eventCount = 0
         }
     }
 

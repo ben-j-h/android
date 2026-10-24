@@ -30,7 +30,7 @@ class PressureSensorManager @Inject constructor(
     SensorEventListener {
     companion object {
         private var isListenerRegistered = false
-        private var listenerLastRegistered = 0
+        private var listenerLastRegistered = 0L
 
         @ProvidesSensor
         internal val pressureSensor = SensorManager.BasicSensor(
@@ -96,7 +96,15 @@ class PressureSensorManager @Inject constructor(
             )
             Timber.d("Pressure sensor listener registered")
             isListenerRegistered = true
-            listenerLastRegistered = now.toInt()
+            listenerLastRegistered = now
+        }
+    }
+
+    override suspend fun onSensorUpdateFinished() {
+        if (isListenerRegistered) {
+            mySensorManager.unregisterListener(this)
+            Timber.d("Pressure sensor listener unregistered, no event received during the update")
+            isListenerRegistered = false
         }
     }
 

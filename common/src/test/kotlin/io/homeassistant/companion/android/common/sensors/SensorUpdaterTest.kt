@@ -14,6 +14,7 @@ import io.homeassistant.companion.android.database.sensor.Sensor
 import io.homeassistant.companion.android.database.server.Server
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -75,6 +76,28 @@ class SensorUpdaterTest {
         updater(serverManager, setOf(manager)).updateSensors()
 
         coVerify(exactly = 1) { manager.requestSensorUpdate(null) }
+    }
+
+    @Test
+    fun `Given device registered when updateSensors then managers with a sensor are told the update finished after updating`() = runTest {
+        val serverManager = mockk<ServerManager> {
+            coEvery { isRegistered() } returns true
+            coEvery { servers() } returns emptyList()
+        }
+        val manager = mockk<SensorManager>(relaxed = true) {
+            every { hasSensor() } returns true
+        }
+        val managerWithoutSensor = mockk<SensorManager>(relaxed = true) {
+            every { hasSensor() } returns false
+        }
+
+        updater(serverManager, setOf(manager, managerWithoutSensor)).updateSensors()
+
+        coVerifyOrder {
+            manager.requestSensorUpdate(null)
+            manager.onSensorUpdateFinished()
+        }
+        coVerify(exactly = 0) { managerWithoutSensor.onSensorUpdateFinished() }
     }
 
     @Test

@@ -251,6 +251,15 @@ interface SensorManager {
      */
     suspend fun requestSensorUpdate()
 
+    /**
+     * Called once a sensor update finished, after the states were sent to the servers.
+     *
+     * A manager that registers a hardware sensor listener for a single reading must unregister it here
+     * if the reading didn't arrive yet. Android doesn't deliver sensor events to a background or frozen
+     * app, so the listener would otherwise keep the sensor active until the next update.
+     */
+    suspend fun onSensorUpdateFinished() {}
+
     suspend fun getAvailableSensors(): List<BasicSensor>
 
     /**

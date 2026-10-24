@@ -30,7 +30,7 @@ class LightSensorManager @Inject constructor(
     SensorEventListener {
     companion object {
         private var isListenerRegistered = false
-        private var listenerLastRegistered = 0
+        private var listenerLastRegistered = 0L
 
         @ProvidesSensor
         internal val lightSensor = SensorManager.BasicSensor(
@@ -94,7 +94,15 @@ class LightSensorManager @Inject constructor(
             )
             Timber.d("Light sensor listener registered")
             isListenerRegistered = true
-            listenerLastRegistered = now.toInt()
+            listenerLastRegistered = now
+        }
+    }
+
+    override suspend fun onSensorUpdateFinished() {
+        if (isListenerRegistered) {
+            mySensorManager.unregisterListener(this)
+            Timber.d("Light sensor listener unregistered, no event received during the update")
+            isListenerRegistered = false
         }
     }
 

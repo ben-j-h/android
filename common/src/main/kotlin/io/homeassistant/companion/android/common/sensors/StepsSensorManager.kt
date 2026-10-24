@@ -33,7 +33,7 @@ class StepsSensorManager @Inject constructor(
     SensorEventListener {
     companion object {
         private var isListenerRegistered = false
-        private var listenerLastRegistered = 0
+        private var listenerLastRegistered = 0L
 
         @ProvidesSensor
         internal val stepsSensor = SensorManager.BasicSensor(
@@ -102,8 +102,16 @@ class StepsSensorManager @Inject constructor(
                 )
                 Timber.d("Steps sensor listener registered")
                 isListenerRegistered = true
-                listenerLastRegistered = now.toInt()
+                listenerLastRegistered = now
             }
+        }
+    }
+
+    override suspend fun onSensorUpdateFinished() {
+        if (isListenerRegistered) {
+            mySensorManager.unregisterListener(this)
+            Timber.d("Steps sensor listener unregistered, no event received during the update")
+            isListenerRegistered = false
         }
     }
 

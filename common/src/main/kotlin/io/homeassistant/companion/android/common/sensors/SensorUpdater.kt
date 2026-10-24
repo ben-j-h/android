@@ -32,10 +32,12 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /**
@@ -127,6 +129,20 @@ class SensorUpdater @VisibleForTesting internal constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Exception while awaiting sensor updates.")
+        } finally {
+            withContext(NonCancellable) { notifyUpdateFinished(managers) }
+        }
+    }
+
+    private suspend fun notifyUpdateFinished(managers: Set<SensorManager>) {
+        managers.forEach { manager ->
+            if (manager.hasSensor()) {
+                try {
+                    manager.onSensorUpdateFinished()
+                } catch (e: Exception) {
+                    Timber.e(e, "Issue finishing the update for ${context.getString(manager.name)}")
+                }
+            }
         }
     }
 
@@ -138,6 +154,14 @@ class SensorUpdater @VisibleForTesting internal constructor(
         val sensorManager = managers.firstOrNull {
             it.getAvailableSensors().any { s -> s.id == sensorId }
         } ?: return
+        try {
+            updateSingleSensor(sensorManager, sensorId)
+        } finally {
+            withContext(NonCancellable) { notifyUpdateFinished(setOf(sensorManager)) }
+        }
+    }
+
+    private suspend fun updateSingleSensor(sensorManager: SensorManager, sensorId: String) {
         try {
             sensorManager.requestSensorUpdate()
         } catch (e: CancellationException) {
